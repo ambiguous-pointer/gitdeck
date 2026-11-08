@@ -54,9 +54,7 @@ export function BranchSelector(): JSX.Element | null {
     openDialog('checkout', { target: name });
   };
 
-  const triggerLabel = detached
-    ? t('repo.detached', 'detached HEAD')
-    : current || t('status.detached', 'Detached HEAD');
+  const triggerLabel = detached ? t('repo.detached', 'detached HEAD') : current || '…';
 
   return (
     <Popover

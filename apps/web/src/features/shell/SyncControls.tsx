@@ -27,12 +27,19 @@ export function SyncControls(): JSX.Element | null {
   const detached = data.detached;
 
   const pushProps = { branch: data.branch, remote };
+  const syncLabel = !hasUpstream
+    ? t('status.setUpstream', 'Set upstream')
+    : behind > 0
+      ? t('actions.pull', 'Pull')
+      : ahead > 0
+        ? t('actions.push', 'Push')
+        : t('status.synced', 'Up to date');
   const buttonClass =
     'flex h-6 items-center gap-1 rounded px-1.5 text-2xs font-medium text-fg-secondary transition-colors hover:bg-hover hover:text-fg disabled:pointer-events-none disabled:opacity-40';
 
   return (
     <div className="flex items-center gap-1.5">
-      <Tooltip label={t('status.synced', 'Up to date')}>
+      <Tooltip label={syncLabel}>
         <button
           type="button"
           disabled={detached}
@@ -47,6 +54,7 @@ export function SyncControls(): JSX.Element | null {
             }
             openDialog('push', pushProps);
           }}
+          aria-label={syncLabel}
           className={cn(
             'flex h-6 items-center gap-1 rounded border px-1.5 text-2xs font-medium transition-colors',
             !hasUpstream
