@@ -69,7 +69,7 @@ function defaultSettings(options: ServerOptions): AppSettings {
     commandTimeoutMs: options.commandTimeoutMs ?? config.commandTimeoutMs,
     locale: 'en',
     theme: 'dark',
-    accent: '#6366f1',
+    accent: '#5b8def',
     confirmDangerous: true,
   };
 }
