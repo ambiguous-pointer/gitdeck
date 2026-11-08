@@ -10,8 +10,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import pino from 'pino';
 import pinoHttp from 'pino-http';
-import type { ApiErrorBody, ApiErrorCode, AppSettings, GitVersionInfo } from '@gitdeck/shared';
+import type { ApiErrorBody, ApiErrorCode } from '@gitdeck/shared';
 import { config } from './config';
+import { appInfo, createServerContext, type ServerOptions } from './context';
+import { createApiRouter } from './routes';
 
 export const logger = pino({ level: config.logLevel });
 
@@ -32,15 +34,14 @@ export class ApiError extends Error {
 export const badRequest = (message: string, details?: unknown) =>
   new ApiError(400, 'VALIDATION_ERROR', message, details);
 export const notFound = (message: string) => new ApiError(404, 'NOT_FOUND', message);
-export const gitError = (message: string, details?: unknown) => new ApiError(400, 'GIT_ERROR', message, details);
+export const gitError = (message: string, details?: unknown) =>
+  new ApiError(400, 'GIT_ERROR', message, details);
 
-export interface CreateAppOptions {
-  settings?: AppSettings;
-  gitVersion?: string;
-}
+export interface CreateAppOptions extends ServerOptions {}
 
 export function createApp(options: CreateAppOptions = {}): express.Express {
   const app = express();
+  const ctx = createServerContext(options);
   app.disable('x-powered-by');
 
   app.use(
@@ -61,19 +62,11 @@ export function createApp(options: CreateAppOptions = {}): express.Express {
   );
 
   app.get('/api/health', (_req, res) => {
-    const appInfo: GitVersionInfo = {
-      appVersion: config.appVersion,
-      gitVersion: options.gitVersion ?? 'unknown',
-      nodeVersion: process.version,
-      platform: `${process.platform}-${process.arch}`,
-      home: config.monorepoRoot ?? process.cwd(),
-      dataDir: config.dataDir,
-    };
-    res.json({ status: 'ok', app: appInfo, settings: options.settings });
+    res.json({ status: 'ok', app: appInfo(ctx), settings: ctx.settingsStore.get() });
   });
 
-  // Feature routers (implemented by the backend feature branch).
-  // app.use('/api', createRepoRouter()); etc.
+  // Feature routers (repositories, git operations, settings, scan, exec).
+  app.use('/api', createApiRouter(ctx));
 
   app.use('/api', (req, _res, next) => {
     next(notFound(`Unknown API route: ${req.method} ${req.path}`));
@@ -94,10 +87,18 @@ export function createApp(options: CreateAppOptions = {}): express.Express {
   // Central error envelope: { error: { code, message, details } }.
   app.use(
     (error: unknown, req: express.Request, res: express.Response, _next: express.NextFunction): void => {
+      const bodyParseError =
+        error instanceof SyntaxError && (error as { status?: number }).status === 400 && 'body' in error;
       const apiError =
         error instanceof ApiError
           ? error
-          : new ApiError(500, 'INTERNAL', error instanceof Error ? error.message : 'Unexpected server error');
+          : bodyParseError
+            ? new ApiError(400, 'VALIDATION_ERROR', 'Invalid JSON request body')
+            : new ApiError(
+                500,
+                'INTERNAL',
+                error instanceof Error ? error.message : 'Unexpected server error',
+              );
       const body: ApiErrorBody = {
         error: { code: apiError.code, message: apiError.message, details: apiError.details },
       };
