@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import type { StashIndexInput, StashPushInput } from '@gitdeck/shared';
 import { useApplyStash, useCreateStash, useDropStash, usePopStash, useStashShow, useStashes } from '@/api/hooks';
+import { errorMessage } from '@/api/client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -21,13 +22,10 @@ import { useDialogOperation } from './use-dialog-operation';
 /* Create                                                              */
 /* ------------------------------------------------------------------ */
 
-type StashCreateDialogProps = Record<string, never>;
-
 export function StashCreateDialog(): JSX.Element {
   const { t } = useI18n();
   const repoId = useDialogRepoId();
   const closeDialog = useCloseDialog();
-  useDialogProps<StashCreateDialogProps>();
   const createStash = useCreateStash(repoId);
 
   const [message, setMessage] = useState('');
@@ -125,7 +123,9 @@ export function StashViewDialog(): JSX.Element {
         stash
           ? [
               stash.message,
-              stash.branch ? `on ${stash.branch}` : null,
+              stash.branch
+                ? t('dialog.stashView.onBranch', 'on {branch}', { branch: stash.branch })
+                : null,
               stash.date ? formatRelativeTime(stash.date, locale) : null,
             ]
               .filter(Boolean)
@@ -178,7 +178,11 @@ export function StashViewDialog(): JSX.Element {
           })}
         </span>
       </div>
-      {stashShow.isLoading ? (
+      {stashShow.isError ? (
+        <DialogAlert variant="danger">
+          {t('toast.failed', 'Operation failed')}: {errorMessage(stashShow.error)}
+        </DialogAlert>
+      ) : stashShow.isLoading ? (
         <div className="flex h-40 items-center justify-center">
           <Spinner />
         </div>

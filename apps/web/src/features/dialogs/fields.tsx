@@ -194,8 +194,12 @@ export function CommitPicker({ repoId, value, onChange, label, hint, error }: Co
           </Button>
         </div>
         <div className="max-h-44 overflow-y-auto scrollbar-thin">
-          {commits.length === 0 ? (
+          {log.isPending ? (
             <p className="px-2 py-3 text-center text-2xs text-fg-muted">{t('common.loading', 'Loading…')}</p>
+          ) : commits.length === 0 ? (
+            <p className="px-2 py-3 text-center text-2xs text-fg-muted">
+              {t('dialog.cherryPick.noCommits', 'No commits found in this repository yet.')}
+            </p>
           ) : (
             commits.map((commit) => {
               const checked = value.includes(commit.hash);

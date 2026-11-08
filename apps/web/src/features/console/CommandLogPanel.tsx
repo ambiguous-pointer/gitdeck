@@ -150,13 +150,10 @@ export function CommandLogPanel(): JSX.Element {
                         <span>{formatDuration(entry.durationMs)}</span>
                         <span>·</span>
                         <span>{absoluteTime}</span>
-                        {entry.repoId ? (
-                          <code className="ml-auto truncate font-mono text-2xs text-fg-muted">{entry.repoId.slice(0, 8)}</code>
-                        ) : null}
                         <Button
                           variant="ghost"
                           size="xs"
-                          className="shrink-0"
+                          className="ml-auto shrink-0"
                           onClick={() => void copy(`${entry.id}-output`, entry.output)}
                           icon={
                             copiedId === `${entry.id}-output` ? (

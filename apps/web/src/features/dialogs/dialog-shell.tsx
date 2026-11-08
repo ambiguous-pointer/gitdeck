@@ -13,7 +13,7 @@ import {
   ShieldAlert,
   Terminal,
 } from 'lucide-react';
-import { useId, useState, type ReactNode } from 'react';
+import { useId, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { errorDetails, errorMessage } from '@/api/client';
 import { useToast } from '@/components/feedback/toast';
 import { Button, type ButtonVariant } from '@/components/ui/button';
@@ -67,13 +67,28 @@ export function DialogShell({
 }: DialogShellProps): JSX.Element {
   const { t } = useI18n();
   const formId = useId();
+  const formRef = useRef<HTMLFormElement>(null);
+
+  /**
+   * Keep a stable identity: `Modal` re-runs its focus effect when `onClose`
+   * changes, which would steal focus from inputs on every keystroke.
+   */
+  const handleClose = useCallback(() => {
+    if (!busy) onClose();
+  }, [busy, onClose]);
+
+  // Modal focuses its panel on mount, so focus the first field ourselves.
+  useEffect(() => {
+    const field = formRef.current?.querySelector<HTMLElement>(
+      'input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled])',
+    );
+    field?.focus();
+  }, []);
 
   return (
     <Modal
       open
-      onClose={() => {
-        if (!busy) onClose();
-      }}
+      onClose={handleClose}
       title={title}
       description={description}
       size={size}
@@ -98,6 +113,7 @@ export function DialogShell({
       }
     >
       <form
+        ref={formRef}
         id={formId}
         onSubmit={(event) => {
           event.preventDefault();

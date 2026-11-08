@@ -46,7 +46,6 @@ export function ConfirmDialog(): JSX.Element {
   return (
     <DialogShell
       title={props.title ?? t('dialog.confirm.title', 'Are you sure?')}
-      description={props.description != null ? undefined : undefined}
       danger={danger}
       busy={pending}
       submitLabel={props.confirmLabel ?? t('dialog.confirm.confirm', 'Confirm')}

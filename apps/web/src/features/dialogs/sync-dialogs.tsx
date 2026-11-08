@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { SegmentedControl } from '@/components/ui/segmented';
 import { useI18n } from '@/i18n';
-import { cn } from '@/lib/cn';
 import { DialogAlert, DialogPreview, DialogShell } from './dialog-shell';
 import { RefField, RemoteSelect } from './fields';
 import { failedOutput, gitCommand, isValidRefName, shellQuote } from './helpers';
@@ -147,8 +146,6 @@ export function PushDialog(): JSX.Element {
 /* ------------------------------------------------------------------ */
 
 type PullStrategy = 'default' | 'merge' | 'rebase' | 'ff-only';
-type PullDialogProps = Record<string, never>;
-
 const PULL_STRATEGIES: { value: PullStrategy; labelKey: string; fallback: string }[] = [
   { value: 'default', labelKey: 'common.default', fallback: 'Default' },
   { value: 'merge', labelKey: 'dialog.pull.merge', fallback: 'Merge' },
@@ -247,7 +244,6 @@ export function PullDialog(): JSX.Element {
 /* Fetch                                                               */
 /* ------------------------------------------------------------------ */
 
-type FetchDialogProps = Record<string, never>;
 type FetchTarget = 'default' | 'all';
 
 export function FetchDialog(): JSX.Element {
@@ -294,7 +290,7 @@ export function FetchDialog(): JSX.Element {
         <SegmentedControl<FetchTarget>
           value={target}
           onChange={setTarget}
-          className={cn('w-full', all && 'pointer-events-none opacity-60')}
+          className="w-full"
           options={[
             { value: 'default', label: t('dialog.fetch.oneRemote', 'One remote') },
             { value: 'all', label: t('dialog.fetch.all', 'Fetch all remotes') },

@@ -58,7 +58,7 @@ export function CommandRunDialog(): JSX.Element {
 
   const validationError =
     input.trim().length === 0
-      ? t('console.runCommandRequired', 'Enter a git command, e.g. log --oneline -5')
+      ? undefined
       : !allowed
         ? t(
             'console.runCommandNotAllowed',
@@ -99,7 +99,7 @@ export function CommandRunDialog(): JSX.Element {
       size="lg"
       submitLabel={t('console.run', 'Run')}
       submitVariant={mutating ? 'danger' : 'primary'}
-      submitDisabled={Boolean(validationError) || (mutating && !acknowledged) || exec.isPending}
+      submitDisabled={input.trim().length === 0 || Boolean(validationError) || (mutating && !acknowledged) || exec.isPending}
       busy={exec.isPending}
       error={exec.error}
       cancelLabel={t('common.close', 'Close')}
@@ -119,7 +119,10 @@ export function CommandRunDialog(): JSX.Element {
       </Field>
       <p className="flex items-center gap-1.5 text-2xs text-fg-muted">
         <Terminal className="h-3 w-3" />
-        {t('console.allowedHint', 'Allowed subcommands')}: status, log, show, diff, rev-parse, ls-files, branch, tag, stash, fetch, pull, push, merge, rebase, reset, add, commit, checkout, …
+        {t(
+          'console.allowedHint',
+          'Allowed subcommands: status, log, show, diff, rev-parse, ls-files, branch, tag, stash, fetch, pull, push, merge, rebase, reset, add, commit, checkout, …',
+        )}
       </p>
       {mutating ? (
         <>

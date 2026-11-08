@@ -66,10 +66,10 @@ export function MergeDialog(): JSX.Element {
       onClose={closeDialog}
     >
       <RefField
-        label={t('dialog.rebase.onto', 'Branch')}
+        label={t('dialog.merge.branch', 'Branch to merge')}
         value={branch}
         onChange={setBranch}
-        options={branchNames(branches.data?.branches).filter((name) => !name.includes('/'))}
+        options={branchNames(branches.data?.branches)}
         placeholder={t('dialog.merge.targetPlaceholder', 'feature/my-branch')}
         hint={
           suggestion

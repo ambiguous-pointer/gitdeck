@@ -34,7 +34,7 @@ export function BottomPanel(): JSX.Element {
       <div className="flex h-8 shrink-0 items-center gap-1 px-1.5">
         <Tabs
           size="sm"
-          value={open ? tab : 'changes'}
+          value={tab}
           onChange={(value) => setTab(value as 'changes' | 'console')}
           tabs={[
             {

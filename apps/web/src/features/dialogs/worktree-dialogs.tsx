@@ -135,7 +135,7 @@ export function WorktreeAddDialog(): JSX.Element {
           label={t('dialog.worktree.branchLabel', 'Branch to check out')}
           value={branch}
           onChange={setBranch}
-          options={branchNames(branches.data?.branches).filter((name) => !name.includes('/'))}
+          options={branchNames(branches.data?.branches)}
           placeholder="feature/my-branch"
           error={branchInvalid ? t('dialog.branch.invalidName', 'Enter a valid Git branch name.') : undefined}
           required
