@@ -81,15 +81,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: dist
+          merge-multiple: true
 
-      - name: Collect assets
+      - name: Show assets
         shell: bash
-        run: |
-          set -euo pipefail
-          cd dist
-          find . -mindepth 2 -type f -exec cp {} . \;
-          rm -rf ./*/
-          ls -lh
+        run: ls -lh dist
 
       - name: Generate SHA256SUMS
         shell: bash
@@ -110,6 +106,11 @@ jobs:
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --clobber
             gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --title "GitDeck $TAG" --notes-from-tag >/dev/null 2>&1 || true
+          elif gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" dist/* \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "GitDeck $TAG" \
+              --generate-notes
           else
             gh release create "$TAG" dist/* \
               --repo "$GITHUB_REPOSITORY" \
