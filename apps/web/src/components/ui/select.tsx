@@ -16,12 +16,14 @@ export interface SelectProps {
   disabled?: boolean;
   className?: string;
   id?: string;
+  size?: 'sm' | 'md';
+  invalid?: boolean;
   'aria-label'?: string;
 }
 
 /**
- * Minimal styled native select: reliable, keyboard and screen-reader friendly.
- * (The design-system branch may replace it with a richer listbox.)
+ * Styled native select: reliable, keyboard and screen-reader friendly (no
+ * custom listbox needed — the native popup is faster and fully accessible).
  */
 export function Select({
   value,
@@ -31,6 +33,8 @@ export function Select({
   disabled,
   className,
   id,
+  size = 'md',
+  invalid,
   ...rest
 }: SelectProps): JSX.Element {
   const generatedId = useId();
@@ -41,12 +45,16 @@ export function Select({
         value={value}
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
-        className={cn(
-          'h-8 w-full appearance-none truncate rounded-md border border-border bg-canvas pl-2.5 pr-7 text-[13px] text-fg',
-          'focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25',
-          'disabled:cursor-not-allowed disabled:opacity-60',
-        )}
         aria-label={rest['aria-label']}
+        aria-invalid={invalid || undefined}
+        className={cn(
+          'w-full appearance-none truncate rounded-md border border-border bg-canvas pl-2.5 pr-7 text-fg',
+          'transition-[border-color,box-shadow] duration-100 hover:border-border-strong',
+          'focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent',
+          'disabled:cursor-not-allowed disabled:opacity-60',
+          size === 'sm' ? 'h-7 text-xs' : 'h-8 text-[13px]',
+          invalid && 'border-danger focus:border-danger focus:ring-danger',
+        )}
       >
         {placeholder ? (
           <option value="" disabled>
@@ -59,7 +67,10 @@ export function Select({
           </option>
         ))}
       </select>
-      <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fg-muted" />
+      <ChevronDown
+        aria-hidden
+        className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fg-muted"
+      />
     </div>
   );
 }

@@ -5,7 +5,7 @@ export function Kbd({ children, className }: { children: ReactNode; className?: 
   return (
     <kbd
       className={cn(
-        'inline-flex h-5 min-w-5 items-center justify-center rounded border border-border-strong bg-elevated px-1 font-sans text-2xs text-fg-secondary',
+        'inline-flex h-5 min-w-[20px] select-none items-center justify-center rounded border border-border-strong border-b-2 bg-elevated px-1 font-sans text-2xs font-medium leading-none text-fg-secondary',
         className,
       )}
     >
@@ -15,12 +15,16 @@ export function Kbd({ children, className }: { children: ReactNode; className?: 
 }
 
 /** Renders `Ctrl + K` style shortcut hints. */
-export function Shortcut({ keys }: { keys: string[] }): JSX.Element {
+export function Shortcut({ keys, className }: { keys: string[]; className?: string }): JSX.Element {
   return (
-    <span className="inline-flex items-center gap-1">
+    <span className={cn('inline-flex items-center gap-1', className)}>
       {keys.map((key, index) => (
         <span key={`${key}-${index}`} className="inline-flex items-center gap-1">
-          {index > 0 ? <span className="text-2xs text-fg-muted">+</span> : null}
+          {index > 0 ? (
+            <span className="text-2xs text-fg-muted" aria-hidden>
+              +
+            </span>
+          ) : null}
           <Kbd>{key}</Kbd>
         </span>
       ))}

@@ -9,29 +9,55 @@ export interface BadgeProps {
   className?: string;
   icon?: ReactNode;
   title?: string;
+  /** Optional leading dot (status/branch indicator). */
+  dot?: boolean;
+  /** Use monospace glyphs (hashes, counts, shortcuts). */
+  mono?: boolean;
 }
 
 const VARIANTS: Record<BadgeVariant, string> = {
-  default: 'bg-elevated text-fg-secondary border border-border',
-  accent: 'bg-accent-soft text-accent border border-accent/30',
-  success: 'bg-success/15 text-success border border-success/30',
-  warning: 'bg-warning/15 text-warning border border-warning/30',
-  danger: 'bg-danger/15 text-danger border border-danger/30',
-  info: 'bg-info/15 text-info border border-info/30',
-  outline: 'border border-border-strong text-fg-secondary',
+  default: 'border border-border bg-elevated text-fg-secondary',
+  accent: 'border tone-accent',
+  success: 'border tone-success',
+  warning: 'border tone-warning',
+  danger: 'border tone-danger',
+  info: 'border tone-info',
+  outline: 'border border-border-strong bg-transparent text-fg-secondary',
 };
 
-export function Badge({ variant = 'default', children, className, icon, title }: BadgeProps): JSX.Element {
+const DOT: Record<BadgeVariant, string> = {
+  default: 'bg-fg-muted',
+  accent: 'bg-accent',
+  success: 'bg-success',
+  warning: 'bg-warning',
+  danger: 'bg-danger',
+  info: 'bg-info',
+  outline: 'bg-fg-muted',
+};
+
+export function Badge({
+  variant = 'default',
+  children,
+  className,
+  icon,
+  title,
+  dot,
+  mono,
+}: BadgeProps): JSX.Element {
   return (
     <span
       title={title}
       className={cn(
-        'inline-flex h-5 max-w-full items-center gap-1 truncate rounded px-1.5 text-2xs font-medium leading-none',
+        'inline-flex h-5 max-w-full select-none items-center gap-1 truncate rounded px-1.5 text-2xs font-medium leading-none',
         VARIANTS[variant],
+        mono && 'mono tracking-tight',
         className,
       )}
     >
-      {icon ? <span className="flex h-3 w-3 items-center justify-center">{icon}</span> : null}
+      {dot ? <span aria-hidden className={cn('h-1.5 w-1.5 shrink-0 rounded-full', DOT[variant])} /> : null}
+      {icon ? (
+        <span className="flex h-3 w-3 shrink-0 items-center justify-center [&>svg]:h-3 [&>svg]:w-3">{icon}</span>
+      ) : null}
       <span className="truncate">{children}</span>
     </span>
   );

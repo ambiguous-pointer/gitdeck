@@ -1,45 +1,56 @@
 /*
  * GitDeck design tokens.
+ *
  * Semantic colors consumed by tailwind.config.ts. Dark is the default theme;
  * light is a first-class theme, and the accent color is user configurable at
- * runtime (see src/theme/ThemeProvider.tsx).
+ * runtime (see src/theme/ThemeProvider.tsx). Components must only use the
+ * semantic tokens — never raw hex values — so both themes and every custom
+ * accent keep working. Graph lane colors (--graph-1..10) are mirrored by
+ * graphColorHex() in src/lib/palette.ts: keep the two in sync.
  */
 
 :root,
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  --bg-canvas: #15171c;
-  --bg-surface: #1a1d23;
-  --bg-elevated: #21252d;
-  --bg-overlay: #262b34;
-  --bg-hover: #242933;
-  --bg-active: #2c3340;
+  /* Surfaces — a cool, low-glare desktop palette with a clear hierarchy. */
+  --bg-canvas: #121418;
+  --bg-surface: #171a20;
+  --bg-elevated: #1d2129;
+  --bg-overlay: #232833;
+  --bg-hover: #20252e;
+  --bg-active: #2a303c;
 
-  --border-subtle: #232830;
-  --border-default: #2d333d;
-  --border-strong: #3c4451;
+  /* Hairline borders: subtle inside groups, stronger around interactive edges. */
+  --border-subtle: #1e232b;
+  --border-default: #2a303a;
+  --border-strong: #3b4351;
 
-  --fg-primary: #e6e9ef;
-  --fg-secondary: #a8b1bf;
-  --fg-muted: #737d8c;
+  /* Text: primary for content, secondary for labels, muted for metadata. */
+  --fg-primary: #e8ebf1;
+  --fg-secondary: #aab3c2;
+  --fg-muted: #748091;
   --fg-inverted: #0d1117;
 
+  /* Accent — overridden at runtime when the user picks a custom color. */
   --accent: #5b8def;
   --accent-hover: #6f9cf2;
   --accent-soft: rgba(91, 141, 239, 0.18);
   --accent-fg: #ffffff;
 
-  --success: #3fb950;
-  --warning: #d29922;
+  /* Status colors (GitKraken-ish but tuned for AA-ish contrast on surfaces). */
+  --success: #46b95b;
+  --warning: #d6a032;
   --danger: #f85149;
   --info: #58a6ff;
 
-  --diff-add: #3fb950;
-  --diff-add-bg: rgba(63, 185, 80, 0.16);
+  /* Diff colors. */
+  --diff-add: #46b95b;
+  --diff-add-bg: rgba(70, 185, 91, 0.15);
   --diff-del: #f85149;
-  --diff-del-bg: rgba(248, 81, 73, 0.16);
+  --diff-del-bg: rgba(248, 81, 73, 0.15);
 
+  /* Commit-graph lanes (mirrored by graphColorHex in lib/palette.ts). */
   --graph-1: #5b8def;
   --graph-2: #e5a33c;
   --graph-3: #a78bfa;
@@ -51,8 +62,13 @@
   --graph-9: #2dd4bf;
   --graph-10: #c084fc;
 
+  /* Chrome details. */
   --shadow-color: 0 0 0;
-  --selection-bg: rgba(91, 141, 239, 0.28);
+  --selection-bg: rgba(91, 141, 239, 0.3);
+  --overlay-backdrop: rgba(6, 8, 12, 0.62);
+  --scrollbar-thumb: #343c49;
+  --scrollbar-thumb-hover: #495364;
+  --focus-ring: var(--accent);
 }
 
 :root[data-theme='light'] {
@@ -62,33 +78,34 @@
   --bg-surface: #ffffff;
   --bg-elevated: #ffffff;
   --bg-overlay: #ffffff;
-  --bg-hover: #eef1f5;
-  --bg-active: #e4e9f0;
+  --bg-hover: #edf0f5;
+  --bg-active: #e2e8f1;
 
-  --border-subtle: #eef0f4;
-  --border-default: #dde2e9;
-  --border-strong: #c6ced9;
+  --border-subtle: #eef1f5;
+  --border-default: #dde2ea;
+  --border-strong: #c4ccd9;
 
-  --fg-primary: #1c2430;
-  --fg-secondary: #4c596b;
-  --fg-muted: #77839a;
+  --fg-primary: #1a2230;
+  --fg-secondary: #4a5566;
+  --fg-muted: #757f90;
   --fg-inverted: #ffffff;
 
   --accent: #3f6fd8;
   --accent-hover: #3560c2;
-  --accent-soft: rgba(63, 111, 216, 0.14);
+  --accent-soft: rgba(63, 111, 216, 0.13);
   --accent-fg: #ffffff;
 
-  --success: #1a7f37;
-  --warning: #9a6700;
+  --success: #198038;
+  --warning: #96690a;
   --danger: #cf222e;
   --info: #0969da;
 
-  --diff-add: #1a7f37;
-  --diff-add-bg: rgba(26, 127, 55, 0.12);
+  --diff-add: #198038;
+  --diff-add-bg: rgba(25, 128, 56, 0.11);
   --diff-del: #cf222e;
-  --diff-del-bg: rgba(207, 34, 46, 0.12);
+  --diff-del-bg: rgba(207, 34, 46, 0.11);
 
+  /* Same hue family as dark but darkened for contrast on white. */
   --graph-1: #3f6fd8;
   --graph-2: #b7791f;
   --graph-3: #7c5cd6;
@@ -96,12 +113,16 @@
   --graph-5: #d6336c;
   --graph-6: #1c7ed6;
   --graph-7: #d9480f;
-  --graph-8: #b08a00;
+  --graph-8: #a38100;
   --graph-9: #0c8599;
   --graph-10: #9c36b5;
 
   --shadow-color: 220 30% 40%;
   --selection-bg: rgba(63, 111, 216, 0.2);
+  --overlay-backdrop: rgba(24, 32, 46, 0.34);
+  --scrollbar-thumb: #c7cfdb;
+  --scrollbar-thumb-hover: #a9b4c4;
+  --focus-ring: var(--accent);
 }
 
 * {
@@ -114,7 +135,13 @@ body,
   height: 100%;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  background-color: var(--bg-canvas);
+}
+
 body {
+  margin: 0;
   background-color: var(--bg-canvas);
   color: var(--fg-primary);
   font-family:
@@ -130,15 +157,21 @@ body {
   font-size: 13px;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  font-feature-settings: 'cv05' 1, 'ss01' 1;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
 }
 
 ::selection {
   background: var(--selection-bg);
 }
 
+/* Crisp, accent-colored keyboard focus. Mouse clicks never show it. */
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 1px;
 }
 
@@ -151,13 +184,13 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: 6px;
+  background: var(--scrollbar-thumb);
+  border-radius: 8px;
   border: 2px solid transparent;
   background-clip: content-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--fg-muted);
+  background: var(--scrollbar-thumb-hover);
   background-clip: content-box;
   border: 2px solid transparent;
 }
@@ -167,7 +200,7 @@ body {
 
 .scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
 input,
@@ -176,4 +209,61 @@ select,
 button {
   font: inherit;
   color: inherit;
+}
+
+/* Subtle inline code styling used by the git console and dialogs. */
+code,
+kbd,
+pre,
+samp {
+  font-family:
+    'JetBrains Mono',
+    'Cascadia Code',
+    'Cascadia Mono',
+    'Consolas',
+    'SFMono-Regular',
+    'Menlo',
+    monospace;
+  font-variant-ligatures: none;
+}
+
+code:not(pre code) {
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  background-color: var(--bg-elevated);
+  padding: 0.08em 0.34em;
+  font-size: 0.92em;
+  color: var(--fg-secondary);
+}
+
+pre {
+  margin: 0;
+}
+
+/* Keyboard keycaps rendered outside of the <Kbd> component. */
+.kbd {
+  display: inline-flex;
+  min-width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background-color: var(--bg-elevated);
+  padding: 0 5px;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--fg-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
