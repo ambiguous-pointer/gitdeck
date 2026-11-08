@@ -13,3 +13,4 @@ coverage/
 apps/server/.data/
 .vite/
 build/
+dist-sea/
