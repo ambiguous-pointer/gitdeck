@@ -1,0 +1,75 @@
+@import './theme.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  input[type='color'] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+  input[type='color']::-webkit-color-swatch-wrapper {
+    padding: 0;
+  }
+  input[type='color']::-webkit-color-swatch {
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply rounded-md border border-border bg-surface;
+  }
+
+  .row-hover {
+    @apply transition-colors hover:bg-hover;
+  }
+
+  .focus-ring {
+    @apply outline-none ring-2 ring-accent/60 ring-offset-0;
+  }
+
+  .truncate-path {
+    direction: rtl;
+    text-align: left;
+    unicode-bidi: plaintext;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .drag-none {
+    -webkit-user-drag: none;
+    user-select: none;
+  }
+  .mono {
+    font-family:
+      'JetBrains Mono',
+      'Cascadia Code',
+      'Cascadia Mono',
+      Consolas,
+      'SFMono-Regular',
+      Menlo,
+      monospace;
+    font-variant-ligatures: none;
+  }
+  .animate-in {
+    animation: fade-in 120ms ease-out;
+  }
+}

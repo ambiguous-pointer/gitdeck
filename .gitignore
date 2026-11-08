@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+*.log
+.env
+.env.local
+.DS_Store
+.tmp/
+.demo/
+.worktrees/
+.gitdeck/
+apps/server/.data/
+.vite/
