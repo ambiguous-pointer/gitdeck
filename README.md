@@ -74,6 +74,20 @@ pnpm build            # shared + server (tsup) + web (vite)
 node apps/server/dist/index.js   # serves the built web app and the API from :4319
 ```
 
+### Single-file binary (Node SEA)
+
+GitDeck can be shipped as one self-contained executable (Node runtime + API +
+embedded web UI). Build it on the target platform (Linux produces an ELF):
+
+```bash
+pnpm install
+pnpm build:sea
+./build/sea/gitdeck      # serves API + UI on :4319
+```
+
+The target machine still needs a `git` executable on PATH. See
+[docs/SEA.md](docs/SEA.md) for options, size expectations and troubleshooting.
+
 ### Configuration
 
 | Variable | Default | Description |

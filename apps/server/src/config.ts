@@ -6,8 +6,13 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { isSeaBinary, readSeaAssetText } from './sea-assets';
+
+/** True when the server runs from a Node SEA binary (`pnpm build:sea`). */
+const seaMode = isSeaBinary();
 
 function findMonorepoRoot(): string | null {
+  if (seaMode) return null;
   // `__dirname` is apps/server/src or apps/server/dist — three levels up is the repo root.
   const fromDirname = path.resolve(__dirname, '../../..');
   const candidates = [process.cwd(), fromDirname];
@@ -30,6 +35,19 @@ function findMonorepoRoot(): string | null {
 const monorepoRoot = findMonorepoRoot();
 
 function readAppVersion(): string {
+  if (seaMode) {
+    // The build script embeds the root package.json as `app/package.json`.
+    const embedded = readSeaAssetText('app/package.json');
+    if (embedded) {
+      try {
+        const parsed = JSON.parse(embedded) as { version?: string };
+        if (parsed.version) return parsed.version;
+      } catch {
+        // fall through to the default below
+      }
+    }
+    return '0.1.0';
+  }
   const candidates = [
     path.resolve(__dirname, '../../package.json'),
     path.resolve(monorepoRoot ?? process.cwd(), 'package.json'),
@@ -61,6 +79,10 @@ export interface ServerConfig {
   webDist: string | null;
   appVersion: string;
   maxOutputBytes: number;
+  /** Running from a single-file Node SEA executable. */
+  seaMode: boolean;
+  /** Directory containing the executable (SEA builds use it as a hint for logs). */
+  executableDir: string;
 }
 
 export const config: ServerConfig = {
@@ -80,9 +102,13 @@ export const config: ServerConfig = {
       : path.join(os.homedir(), '.gitdeck'),
   monorepoRoot,
   demoRepoPath,
-  webDist: process.env.GITDECK_WEB_DIST ?? (monorepoRoot ? path.join(monorepoRoot, 'apps', 'web', 'dist') : null),
+  webDist: seaMode
+    ? null
+    : (process.env.GITDECK_WEB_DIST ?? (monorepoRoot ? path.join(monorepoRoot, 'apps', 'web', 'dist') : null)),
   appVersion: readAppVersion(),
   maxOutputBytes: 2 * 1024 * 1024,
+  seaMode,
+  executableDir: path.dirname(process.execPath),
 };
 
 export function ensureDataDir(): void {

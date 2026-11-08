@@ -12,3 +12,4 @@ coverage/
 .gitdeck/
 apps/server/.data/
 .vite/
+build/

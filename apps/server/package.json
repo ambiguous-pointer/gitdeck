@@ -10,7 +10,8 @@
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "pnpm --filter @gitdeck/shared build && vitest run --config src/test/vitest.config.mts",
-    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build:sea": "tsup --config tsup.sea.config.ts"
   },
   "dependencies": {
     "@gitdeck/shared": "workspace:*",

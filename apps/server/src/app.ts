@@ -14,6 +14,7 @@ import type { ApiErrorBody, ApiErrorCode } from '@gitdeck/shared';
 import { config } from './config';
 import { appInfo, createServerContext, type ServerOptions } from './context';
 import { createApiRouter } from './routes';
+import { createSeaStaticMiddleware } from './sea-assets';
 
 export const logger = pino({ level: config.logLevel });
 
@@ -72,8 +73,12 @@ export function createApp(options: CreateAppOptions = {}): express.Express {
     next(notFound(`Unknown API route: ${req.method} ${req.path}`));
   });
 
-  // Serve the built web app when available (production / `pnpm build`).
-  if (config.webDist && fs.existsSync(path.join(config.webDist, 'index.html'))) {
+  // Serve the web app: embedded SEA assets first (`pnpm build:sea` builds a
+  // single self-contained binary), then the regular on-disk Vite build.
+  const seaStatic = createSeaStaticMiddleware();
+  if (seaStatic) {
+    app.use(seaStatic);
+  } else if (config.webDist && fs.existsSync(path.join(config.webDist, 'index.html'))) {
     app.use(express.static(config.webDist));
     app.use((req, res, next) => {
       if (req.method !== 'GET' || req.path.startsWith('/api')) return next();
