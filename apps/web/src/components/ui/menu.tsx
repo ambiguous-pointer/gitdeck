@@ -340,7 +340,8 @@ export function DropdownMenu({ trigger, items, onSelect, align = 'start', classN
               style={{
                 left: position.left,
                 top: position.top,
-                visibility: position.ready ? 'visible' : 'hidden',
+                opacity: position.ready ? 1 : 0,
+                pointerEvents: position.ready ? 'auto' : 'none',
               }}
             >
               <MenuList
