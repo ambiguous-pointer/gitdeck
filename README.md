@@ -109,9 +109,11 @@ Two GitHub Actions workflows ship the project:
   production build, demo seed + REST smoke test, i18n audit.
 - **Release** (`.github/workflows/release.yml`) — on `v*` tags (or manual
   dispatch): builds the **single-file Node SEA executables** on
-  `ubuntu-latest` and `windows-latest` (`pnpm build:sea`), then publishes a
-  GitHub Release with `gitdeck-linux-x64`, `gitdeck-windows-x64.exe` and
-  `SHA256SUMS.txt`.
+  `ubuntu-latest` (linux-x64), `ubuntu-24.04-arm` (linux-arm64),
+  `windows-latest` (windows-x64) and `macos-latest` (macos-arm64) via
+  `pnpm build:sea`, then publishes a GitHub Release with
+  `gitdeck-linux-x64`, `gitdeck-linux-arm64`, `gitdeck-windows-x64.exe`,
+  `gitdeck-macos-arm64` and `SHA256SUMS.txt`.
 
 ```bash
 git tag -a v0.1.0 -m "GitDeck v0.1.0"
