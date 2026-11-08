@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: Build, test & smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.15.0
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit & API tests
+        run: pnpm test
+
+      - name: Production build
+        run: pnpm build
+
+      - name: Seed demo repository
+        run: pnpm seed
+
+      - name: API smoke test
+        env:
+          GITDECK_HOME: ${{ github.workspace }}/.gitdeck-ci
+        run: |
+          set -euo pipefail
+          node apps/server/dist/index.js > /tmp/gitdeck-server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4319/api/health >/dev/null 2>&1; then break; fi
+            sleep 1
+          done
+          node scripts/smoke-api.mjs
+          tail -n 5 /tmp/gitdeck-server.log || true
+
+      - name: i18n audit
+        run: pnpm check:i18n
+
+      - name: Upload web build
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: apps/web/dist
+          if-no-files-found: error
+          retention-days: 7

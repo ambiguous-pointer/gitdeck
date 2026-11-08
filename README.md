@@ -100,6 +100,24 @@ The target machine still needs a `git` executable on PATH. See
 | `COMMAND_TIMEOUT_MS` | `120000` | Hard timeout for a single git command |
 | `LOG_LEVEL` | `info` | pino log level |
 
+## 📦 Releases & CI/CD
+
+Two GitHub Actions workflows ship the project:
+
+- **CI** (`.github/workflows/ci.yml`) — on every push to `main` and every PR:
+  install, strict typecheck, unit + API tests (53 tests against real git repos),
+  production build, demo seed + REST smoke test, i18n audit.
+- **Release** (`.github/workflows/release.yml`) — on `v*` tags (or manual
+  dispatch): builds the **single-file Node SEA executables** on
+  `ubuntu-latest` and `windows-latest` (`pnpm build:sea`), then publishes a
+  GitHub Release with `gitdeck-linux-x64`, `gitdeck-windows-x64.exe` and
+  `SHA256SUMS.txt`.
+
+```bash
+git tag -a v0.1.0 -m "GitDeck v0.1.0"
+git push origin v0.1.0     # -> Release workflow builds & publishes assets
+```
+
 ## 🏗 Architecture
 
 ```
