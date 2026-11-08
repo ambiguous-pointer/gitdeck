@@ -48,8 +48,17 @@ export interface ServerContext {
 }
 
 function defaultScanRoots(): string[] {
-  if (config.monorepoRoot) return [config.monorepoRoot];
-  return [os.homedir()];
+  if (!config.monorepoRoot) return [os.homedir()];
+  const roots = [config.monorepoRoot];
+  // Make the seeded demo workspace (and its linked worktree) discoverable out of
+  // the box when running inside the GitDeck monorepo.
+  const demoRoot = path.join(config.monorepoRoot, '.demo');
+  try {
+    if (fs.statSync(demoRoot).isDirectory()) roots.push(demoRoot);
+  } catch {
+    // no demo directory — nothing to add
+  }
+  return roots;
 }
 
 function defaultSettings(options: ServerOptions): AppSettings {

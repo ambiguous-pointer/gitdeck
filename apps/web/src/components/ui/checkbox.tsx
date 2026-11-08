@@ -1,5 +1,5 @@
 import { Check, Minus } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 
 export interface CheckboxProps {
@@ -30,6 +30,7 @@ export function Checkbox({
   className,
   id,
 }: CheckboxProps): JSX.Element {
+  const generatedId = useId();
   const active = checked || Boolean(indeterminate);
   return (
     <label
@@ -41,7 +42,7 @@ export function Checkbox({
     >
       <span className="relative mt-px inline-flex h-4 w-4 shrink-0 items-center justify-center">
         <input
-          id={id}
+          id={id ?? generatedId}
           type="checkbox"
           className="peer absolute inset-0 z-10 m-0 h-full w-full cursor-pointer appearance-none rounded-[4px] opacity-0 disabled:cursor-not-allowed"
           checked={checked}

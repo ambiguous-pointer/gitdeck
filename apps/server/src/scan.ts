@@ -43,6 +43,8 @@ async function inspectCandidate(ctx: ServerContext, directory: string): Promise<
   const commonDir = commonDirRaw ? canonicalPath(path.resolve(directory, commonDirRaw)) : gitDir;
   const bare = lines[2] === 'true';
   const isWorktree = !bare && !sameRepoPath(gitDir, commonDir);
+  // Bare repositories are not useful to open in the UI; skip them.
+  if (bare) return undefined;
 
   const branchRaw = branchOutcome.result.ok ? branchOutcome.result.stdout.trim() : '';
   const branch = branchRaw && branchRaw !== 'HEAD' ? branchRaw : undefined;

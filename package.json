@@ -4,7 +4,9 @@
   "private": true,
   "description": "GitDeck — a production-grade, cross-platform web Git GUI (pnpm monorepo)",
   "packageManager": "pnpm@12.15.0",
-  "engines": { "node": ">=20.11.0" },
+  "engines": {
+    "node": ">=20.11.0"
+  },
   "scripts": {
     "dev": "pnpm build:shared && concurrently -k -n server,web -c cyan,magenta \"pnpm --filter @gitdeck/server dev\" \"pnpm --filter @gitdeck/web dev\"",
     "dev:server": "pnpm build:shared && pnpm --filter @gitdeck/server dev",
@@ -19,7 +21,8 @@
     "check:i18n": "node scripts/check-i18n.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "clean": "pnpm -r clean"
+    "clean": "pnpm -r clean",
+    "smoke": "node scripts/smoke-api.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.1.0",

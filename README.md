@@ -9,6 +9,14 @@ every action shows the exact `git` command it runs and the raw output it produce
 
 ![GitDeck dark theme](docs/screenshots/gitdeck-dark.png)
 
+| Light theme | Commit context menu |
+| --- | --- |
+| ![GitDeck light theme](docs/screenshots/gitdeck-light.png) | ![Commit context menu](docs/screenshots/gitdeck-context-menu.png) |
+
+| Diff viewer | Worktree auto-scan | Settings & custom accent |
+| --- | --- | --- |
+| ![Diff viewer](docs/screenshots/gitdeck-diff.png) | ![Worktree scan](docs/screenshots/gitdeck-worktree-scan.png) | ![Settings](docs/screenshots/gitdeck-settings-zh.png) |
+
 ## ✨ Features
 
 ### History & inspection
@@ -122,6 +130,7 @@ pnpm typecheck        # strict TypeScript across all packages
 pnpm test             # vitest: graph layout + server integration tests
 pnpm build            # production build of every package
 pnpm check:i18n       # report missing translations / unused keys
+pnpm smoke            # end-to-end REST API smoke test against a running server
 ```
 
 - Server integration tests create real temporary git repositories (branches, merges, tags, stashes,

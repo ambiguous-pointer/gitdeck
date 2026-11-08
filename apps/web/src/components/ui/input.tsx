@@ -1,7 +1,11 @@
 import {
+  cloneElement,
   forwardRef,
+  isValidElement,
+  useId,
   type InputHTMLAttributes,
   type LabelHTMLAttributes,
+  type ReactElement,
   type ReactNode,
   type TextareaHTMLAttributes,
 } from 'react';
@@ -20,12 +24,14 @@ const FIELD_BASE =
   'disabled:cursor-not-allowed disabled:opacity-60';
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
-  { className, invalid, ...props },
+  { className, invalid, id, ...props },
   ref,
 ) {
+  const generatedId = useId();
   return (
     <input
       ref={ref}
+      id={id ?? generatedId}
       aria-invalid={invalid || undefined}
       className={cn(
         FIELD_BASE,
@@ -43,12 +49,14 @@ export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElemen
 }
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
-  { className, invalid, ...props },
+  { className, invalid, id, ...props },
   ref,
 ) {
+  const generatedId = useId();
   return (
     <textarea
       ref={ref}
+      id={id ?? generatedId}
       aria-invalid={invalid || undefined}
       className={cn(
         FIELD_BASE,
@@ -73,10 +81,17 @@ export interface FieldProps {
 }
 
 export function Field({ label, hint, error, required, htmlFor, className, children }: FieldProps): JSX.Element {
+  const generatedId = useId();
+  const childProps = isValidElement(children) ? (children.props as { id?: string }) : undefined;
+  const targetId = htmlFor ?? childProps?.id ?? generatedId;
+  const control = isValidElement(children) && !childProps?.id
+    ? cloneElement(children as ReactElement<{ id?: string }>, { id: generatedId })
+    : children;
+
   return (
     <div className={cn('space-y-1.5', className)}>
       {label ? (
-        <label htmlFor={htmlFor} className="flex items-center gap-1 text-xs font-medium text-fg-secondary">
+        <label htmlFor={targetId} className="flex items-center gap-1 text-xs font-medium text-fg-secondary">
           {label}
           {required ? (
             <span className="text-danger" aria-hidden>
@@ -85,7 +100,7 @@ export function Field({ label, hint, error, required, htmlFor, className, childr
           ) : null}
         </label>
       ) : null}
-      {children}
+      {control}
       {error ? (
         <p className="text-xs leading-4 text-danger" role="alert">
           {error}
