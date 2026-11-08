@@ -1,68 +1,102 @@
-import { FileDiff as FileDiffIcon } from 'lucide-react';
+/**
+ * Full-screen diff overlay. Driven entirely by `useAppStore().diffTarget`;
+ * any feature can call `openDiff({ scope, path, from, to, title })`.
+ */
+import { AlertTriangle, FileDiff as FileDiffIcon } from 'lucide-react';
+import { errorMessage } from '@/api/client';
 import { useDiff } from '@/api/hooks';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Modal } from '@/components/ui/modal';
 import { Spinner } from '@/components/ui/spinner';
 import { useI18n } from '@/i18n';
+import { shortHash } from '@/lib/format';
 import { useAppStore } from '@/stores/app-store';
+import { countDiffStats, DiffFilesView, DiffStatsBadges } from './diff-view';
 
-/** Full screen diff overlay, driven by `useAppStore().diffTarget`. */
 export function DiffOverlay(): JSX.Element | null {
   const { t } = useI18n();
-  const activeRepoId = useAppStore((state) => state.activeRepoId);
+  const repoId = useAppStore((state) => state.activeRepoId);
   const diffTarget = useAppStore((state) => state.diffTarget);
   const closeDiff = useAppStore((state) => state.closeDiff);
-  const diff = useDiff(activeRepoId, diffTarget ? { scope: diffTarget.scope, from: diffTarget.from, to: diffTarget.to, path: diffTarget.path } : null);
+
+  const query = useDiff(
+    repoId,
+    diffTarget
+      ? {
+          scope: diffTarget.scope,
+          path: diffTarget.path,
+          from: diffTarget.from,
+          to: diffTarget.to,
+        }
+      : null,
+  );
 
   if (!diffTarget) return null;
+
+  const files = query.data?.files ?? [];
+  const stats = countDiffStats(files);
+  const title = diffTarget.title ?? diffTarget.path ?? t('diff.title', 'Diff');
+
+  const scopeLabel =
+    diffTarget.scope === 'staged'
+      ? t('diff.scopeStaged', 'Staged changes')
+      : diffTarget.scope === 'commit'
+        ? t('diff.scopeCommit', 'Commit {hash}', { hash: shortHash(diffTarget.from) || 'HEAD' })
+        : diffTarget.scope === 'range'
+          ? t('diff.scopeRange', '{from} → {to}', {
+              from: shortHash(diffTarget.from) || 'HEAD',
+              to: shortHash(diffTarget.to) || 'HEAD',
+            })
+          : t('diff.scopeWorktree', 'Working tree');
 
   return (
     <Modal
       open
       onClose={closeDiff}
-      size="xl"
-      title={diffTarget.title ?? diffTarget.path ?? t('diff.title', 'Diff')}
-      description={diffTarget.scope === 'staged' ? t('changes.staged', 'Staged changes') : t('changes.unstaged', 'Changes')}
+      size="full"
+      title={title}
+      description={
+        <span className="flex flex-wrap items-center gap-2">
+          <Badge variant="outline">{scopeLabel}</Badge>
+          {query.data ? <DiffStatsBadges stats={stats} /> : null}
+        </span>
+      }
     >
-      {diff.isLoading ? (
-        <div className="flex justify-center p-10">
-          <Spinner />
-        </div>
-      ) : (diff.data?.files.length ?? 0) === 0 ? (
-        <EmptyState icon={<FileDiffIcon className="h-8 w-8" />} title={t('diff.noChanges', 'No changes to show.')} />
-      ) : (
-        <div className="space-y-4">
-          {diff.data!.files.map((file) => (
-            <div key={file.path} className="overflow-hidden rounded border border-border">
-              <div className="flex items-center gap-2 border-b border-border bg-canvas px-2 py-1 font-mono text-xs text-fg-secondary">
-                <span className="truncate">{file.path}</span>
-                {file.binary ? <span className="ml-auto text-2xs text-fg-muted">{t('diff.binary', 'Binary file')}</span> : null}
-              </div>
-              <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap p-2 font-mono text-xs leading-5">
-                {file.hunks.map((hunk) => (
-                  <span key={hunk.header}>
-                    <span className="block bg-accent-soft px-1 text-accent">{hunk.header}</span>
-                    {hunk.lines.map((line, index) => (
-                      <span
-                        key={index}
-                        className={
-                          line.type === 'add'
-                            ? 'block bg-diff-add-bg text-diff-add'
-                            : line.type === 'del'
-                              ? 'block bg-diff-del-bg text-diff-del'
-                              : 'block text-fg-muted'
-                        }
-                      >
-                        {line.content}
-                      </span>
-                    ))}
-                  </span>
-                ))}
-              </pre>
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="flex h-full min-h-0 flex-col">
+        {query.isLoading ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-2 text-xs text-fg-muted">
+            <Spinner />
+            {t('diff.loading', 'Loading diff…')}
+          </div>
+        ) : query.isError ? (
+          <EmptyState
+            icon={<AlertTriangle className="h-7 w-7 text-danger" />}
+            title={t('error.generic', 'Something went wrong')}
+            description={errorMessage(query.error)}
+            action={
+              <Button variant="secondary" size="sm" onClick={() => void query.refetch()}>
+                {t('common.retry', 'Retry')}
+              </Button>
+            }
+          />
+        ) : files.length === 0 ? (
+          <div className="flex flex-1 items-center justify-center">
+            <EmptyState
+              icon={<FileDiffIcon className="h-8 w-8" />}
+              title={t('diff.noChanges', 'No changes to show.')}
+              description={
+                diffTarget.scope === 'staged'
+                  ? t('diff.emptyStaged', 'Nothing is staged in the index yet.')
+                  : t('diff.emptyWorktree', 'The working tree has no changes for this selection.')
+              }
+            />
+          </div>
+        ) : (
+          <DiffFilesView files={files} initialPath={diffTarget.path} className="min-h-0 flex-1" />
+        )}
+      </div>
     </Modal>
   );
 }
