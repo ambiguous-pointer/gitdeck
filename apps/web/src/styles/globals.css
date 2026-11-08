@@ -36,13 +36,111 @@
   }
 
   .focus-ring {
-    @apply outline-none ring-2 ring-accent/60 ring-offset-0;
+    @apply outline-none ring-2 ring-accent;
   }
 
   .truncate-path {
     direction: rtl;
     text-align: left;
     unicode-bidi: plaintext;
+  }
+
+  /* Modal / overlay scrim — one token so both themes stay coherent. */
+  .overlay-scrim {
+    background-color: var(--overlay-backdrop);
+  }
+
+  /* Dense settings surface: label/value rows separated by hairlines. */
+  .settings-row {
+    @apply flex items-center justify-between gap-3 border-b border-border-subtle px-1 py-2 last:border-b-0;
+  }
+
+  /*
+   * Tinted status tones. Tailwind's `/opacity` modifiers cannot be applied to
+   * `var()` colors (they are silently dropped), so tints are expressed with
+   * color-mix over the semantic tokens instead.
+   */
+  .tone-accent {
+    color: var(--accent);
+    background-color: color-mix(in srgb, var(--accent) 14%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 32%, transparent);
+  }
+  .tone-success {
+    color: var(--success);
+    background-color: color-mix(in srgb, var(--success) 14%, transparent);
+    border-color: color-mix(in srgb, var(--success) 32%, transparent);
+  }
+  .tone-warning {
+    color: var(--warning);
+    background-color: color-mix(in srgb, var(--warning) 14%, transparent);
+    border-color: color-mix(in srgb, var(--warning) 32%, transparent);
+  }
+  .tone-danger {
+    color: var(--danger);
+    background-color: color-mix(in srgb, var(--danger) 14%, transparent);
+    border-color: color-mix(in srgb, var(--danger) 32%, transparent);
+  }
+  .tone-info {
+    color: var(--info);
+    background-color: color-mix(in srgb, var(--info) 14%, transparent);
+    border-color: color-mix(in srgb, var(--info) 32%, transparent);
+  }
+  .hover-accent-soft:hover {
+    background-color: color-mix(in srgb, var(--accent) 24%, transparent);
+  }
+  .hover-danger-soft:hover {
+    background-color: color-mix(in srgb, var(--danger) 12%, transparent);
+  }
+  .danger-active {
+    background-color: color-mix(in srgb, var(--danger) 14%, transparent);
+  }
+
+  /* Selected-ring treatment for accent preset swatches. */
+  .accent-swatch {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--fg-primary) 18%, transparent);
+  }
+  .accent-swatch[aria-pressed='true'] {
+    box-shadow:
+      0 0 0 2px var(--bg-surface),
+      0 0 0 4px var(--fg-secondary);
+  }
+
+  /* Rainbow ring for the "custom color" picker control. */
+  .accent-custom-swatch {
+    background: conic-gradient(
+      from 210deg,
+      var(--graph-1),
+      var(--graph-3),
+      var(--graph-5),
+      var(--graph-2),
+      var(--graph-4),
+      var(--graph-1)
+    );
+  }
+
+  /* Shimmer placeholder for loading states (theme-aware, no hard-coded color). */
+  .skeleton-shimmer {
+    background-image: linear-gradient(90deg, var(--bg-hover) 0%, var(--bg-active) 45%, var(--bg-hover) 90%);
+    background-size: 300% 100%;
+    animation: skeleton-shimmer 1.6s ease-in-out infinite;
+  }
+
+  /* Toast lifetime indicator. */
+  .toast-progress {
+    transform-origin: left center;
+    animation: toast-progress linear forwards;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton-shimmer {
+      animation: none;
+      background-image: none;
+      background-color: var(--bg-hover);
+    }
+    .toast-progress {
+      animation: none;
+      transform: scaleX(1);
+    }
   }
 }
 
@@ -69,7 +167,28 @@
       monospace;
     font-variant-ligatures: none;
   }
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
   .animate-in {
     animation: fade-in 120ms ease-out;
+  }
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
+}
+
+@keyframes toast-progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
   }
 }
