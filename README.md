@@ -33,8 +33,12 @@ every action shows the exact `git` command it runs and the raw output it produce
 ### Working tree
 - Stage / unstage / discard per file or in bulk, with confirmation for destructive actions.
 - Staged / unstaged / untracked / conflict groups, merge-conflict resolution (keep ours/theirs).
+- **File tree for every change list**: changed files are grouped into collapsible folders
+  (working tree groups, diff sidebar, commit details) exactly like VS Code / GitKraken.
 - Commit composer: amend, sign-off, commit & push, `Ctrl+Enter` shortcut.
-- Unified diff viewer for working tree, index, commits and ranges; binary/image placeholders.
+- **Diff viewer with the two classic layouts** — side-by-side (split, left = old / right = new)
+  and unified (single column) — switchable at any time and persisted locally.
+  Works for working tree, index, commits and ranges; binary/image placeholders included.
 
 ### Repository operations
 - Fetch, pull (merge / rebase / fast-forward-only), push (set upstream, force-with-lease, tags).
