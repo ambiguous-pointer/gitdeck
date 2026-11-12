@@ -325,6 +325,25 @@ describe('parseUnifiedDiff', () => {
     ]);
     expect(files[3]).toMatchObject({ path: 'new-name.txt', oldPath: 'old-name.txt' });
   });
+
+  it('ignores the trailing newline artifact after the last hunk line', () => {
+    const rawPatch = [
+      'diff --git a/a.txt b/a.txt',
+      'index 1111111..2222222 100644',
+      '--- a/a.txt',
+      '+++ b/a.txt',
+      '@@ -2 +2 @@ g1',
+      '-old',
+      '+new',
+      '',
+    ].join('\n');
+    const files = parseUnifiedDiff(rawPatch);
+    expect(files).toHaveLength(1);
+    expect(files[0]?.hunks[0]?.lines).toEqual([
+      { type: 'del', content: 'old', oldLine: 2 },
+      { type: 'add', content: 'new', newLine: 2 },
+    ]);
+  });
 });
 
 describe('diff-tree parsers', () => {

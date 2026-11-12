@@ -174,6 +174,9 @@ export function parseUnifiedDiff(raw: string): FileDiff[] {
 
     const hunk = current.currentHunk;
     if (!hunk) continue;
+    // `raw.split('\n')` yields an empty trailing item for git's final newline;
+    // it is not a patch line (a real empty context line would be ' ').
+    if (line === '') continue;
     const marker = line[0] ?? ' ';
     if (marker === '\\') continue; // "\ No newline at end of file"
     if (marker === ' ') {
@@ -223,4 +226,99 @@ export function imageMimeForPath(filePath: string): string | undefined {
 
 export function bufferToDataUrl(mime: string, buffer: Buffer): string {
   return `data:${mime};base64,${buffer.toString('base64')}`;
+}
+
+/* ------------------------------------------------------------------ */
+/* Context bounds                                                      */
+/* ------------------------------------------------------------------ */
+
+/** Smallest/largest unified-diff context accepted by the API. */
+export const MIN_DIFF_CONTEXT = 0;
+export const MAX_DIFF_CONTEXT = 1000;
+/** Context used when the client does not pass `context` (git's default). */
+export const DEFAULT_DIFF_CONTEXT = 3;
+
+/**
+ * Clamp a requested unified-diff context size into the supported range.
+ *
+ * The route schema already rejects out-of-range values; this is a defensive
+ * second line for internal callers (e.g. commit diffs) and keeps `git -U<n>`
+ * arguments sane even if a value slips through.
+ */
+export function clampDiffContext(value: number | undefined): number {
+  if (value === undefined || !Number.isFinite(value)) return DEFAULT_DIFF_CONTEXT;
+  return Math.min(Math.max(Math.trunc(value), MIN_DIFF_CONTEXT), MAX_DIFF_CONTEXT);
+}
+
+/* ------------------------------------------------------------------ */
+/* Payload guard                                                       */
+/* ------------------------------------------------------------------ */
+
+/** Upper bound for a single serialized `FileDiff` entry (~1 MiB). */
+export const MAX_FILE_DIFF_BYTES = 1024 * 1024;
+/** Upper bound for a combined serialized diff payload (`FileDiff[]`, ~8 MiB). */
+export const MAX_TOTAL_DIFF_BYTES = 8 * 1024 * 1024;
+
+export interface DiffPayloadLimits {
+  maxFileBytes?: number;
+  maxTotalBytes?: number;
+}
+
+/** Rough JSON framing cost of a file/hunk/line object (keys, punctuation). */
+const FILE_ENTRY_OVERHEAD_BYTES = 96;
+const HUNK_OVERHEAD_BYTES = 48;
+const LINE_OVERHEAD_BYTES = 32;
+
+function textBytes(value: string | undefined): number {
+  return value ? Buffer.byteLength(value, 'utf8') : 0;
+}
+
+/** Estimated serialized size (JSON string bytes) of one file diff. */
+export function estimateFileDiffBytes(file: FileDiff): number {
+  let bytes =
+    FILE_ENTRY_OVERHEAD_BYTES +
+    textBytes(file.path) +
+    textBytes(file.oldPath) +
+    textBytes(file.imageBefore) +
+    textBytes(file.imageAfter);
+  for (const hunk of file.hunks) {
+    bytes += HUNK_OVERHEAD_BYTES + textBytes(hunk.header);
+    for (const line of hunk.lines) {
+      bytes += LINE_OVERHEAD_BYTES + textBytes(line.content);
+    }
+  }
+  return bytes;
+}
+
+/** Keep the file entry (path/status/binary) but drop its unbounded payload. */
+function metadataOnly(file: FileDiff): FileDiff {
+  const copy: FileDiff = { path: file.path, status: file.status, binary: file.binary, hunks: [] };
+  if (file.oldPath) copy.oldPath = file.oldPath;
+  return copy;
+}
+
+/**
+ * Bound a diff response so it can never embed unbounded content.
+ *
+ * A file whose hunks (or image data URLs) exceed `maxFileBytes`, or that would
+ * push the total payload over `maxTotalBytes`, is down-graded to a
+ * metadata-only entry: path/status/binary are preserved, `hunks` is empty and
+ * image data URLs are dropped. The file is never removed from the list, so the
+ * client can still render its file tree and degrade gracefully instead of
+ * crashing on a huge diff. The response shape is unchanged.
+ */
+export function limitDiffPayload(files: FileDiff[], limits: DiffPayloadLimits = {}): FileDiff[] {
+  const maxFileBytes = limits.maxFileBytes ?? MAX_FILE_DIFF_BYTES;
+  const maxTotalBytes = limits.maxTotalBytes ?? MAX_TOTAL_DIFF_BYTES;
+  let totalBytes = 0;
+  return files.map((file) => {
+    const size = estimateFileDiffBytes(file);
+    const metadataSize = FILE_ENTRY_OVERHEAD_BYTES + textBytes(file.path) + textBytes(file.oldPath);
+    if (size > maxFileBytes || totalBytes + size > maxTotalBytes) {
+      totalBytes += metadataSize;
+      return metadataOnly(file);
+    }
+    totalBytes += size;
+    return file;
+  });
 }

@@ -29,7 +29,13 @@ import type {
 } from '@gitdeck/shared';
 import { ApiError } from '../app';
 import type { ServerContext } from '../context';
-import { bufferToDataUrl, imageMimeForPath, parseUnifiedDiff } from './diff';
+import {
+  bufferToDataUrl,
+  clampDiffContext,
+  imageMimeForPath,
+  limitDiffPayload,
+  parseUnifiedDiff,
+} from './diff';
 import {
   BRANCH_FORMAT,
   COMMIT_PRETTY_FORMAT,
@@ -724,21 +730,26 @@ export async function readCommitDiff(
   meta: RepoMeta,
   hash: string,
   filterPath?: string,
+  context?: number,
 ): Promise<FileDiff[]> {
   assertSafeRevision(hash, 'commit');
   const parent = await firstParent(ctx, meta, hash);
-  const outcome = await gitRun(ctx, meta.root, patchArgs(hash, parent, filterPath));
+  const outcome = await gitRun(
+    ctx,
+    meta.root,
+    patchArgs(hash, parent, filterPath, clampDiffContext(context)),
+  );
   if (commandNotOk(outcome)) failFromGit(outcome, 'git diff');
   const files = parseUnifiedDiff(outcome.result.stdout);
   await enrichImages(ctx, meta, files, (file) => ({
     ...(parent ? { before: `${parent}:${file.oldPath ?? file.path}` } : {}),
     after: `${hash}:${file.path}`,
   }));
-  return files;
+  return limitDiffPayload(files);
 }
 
 export async function readDiff(ctx: ServerContext, meta: RepoMeta, query: DiffQuery): Promise<FileDiff[]> {
-  const context = query.context ?? 3;
+  const context = clampDiffContext(query.context);
   let outcome: GitOutcome;
   let files: FileDiff[];
   switch (query.scope) {
@@ -762,7 +773,7 @@ export async function readDiff(ctx: ServerContext, meta: RepoMeta, query: DiffQu
         before: `:${file.oldPath ?? file.path}`,
         afterWorktree: safePathWithin(meta.root, file.path),
       }));
-      return files;
+      return limitDiffPayload(files);
     }
     case 'staged': {
       const args = ['diff', '--cached', '--no-color', '--patch', `-U${context}`, '-M'];
@@ -774,12 +785,12 @@ export async function readDiff(ctx: ServerContext, meta: RepoMeta, query: DiffQu
         before: `HEAD:${file.oldPath ?? file.path}`,
         after: `:${file.path}`,
       }));
-      return files;
+      return limitDiffPayload(files);
     }
     case 'commit': {
       if (!query.from) throw new ApiError(400, 'VALIDATION_ERROR', 'scope=commit requires the `from` commit');
       assertSafeRevision(query.from, 'from');
-      return readCommitDiff(ctx, meta, query.from, query.path);
+      return readCommitDiff(ctx, meta, query.from, query.path, context);
     }
     case 'range': {
       if (!query.from) throw new ApiError(400, 'VALIDATION_ERROR', 'scope=range requires `from`');
@@ -795,7 +806,7 @@ export async function readDiff(ctx: ServerContext, meta: RepoMeta, query: DiffQu
         before: `${query.from}:${file.oldPath ?? file.path}`,
         after: `${to}:${file.path}`,
       }));
-      return files;
+      return limitDiffPayload(files);
     }
     default:
       throw new ApiError(400, 'VALIDATION_ERROR', `Unsupported diff scope: ${String(query.scope)}`);
@@ -815,7 +826,7 @@ export async function readStashShow(
     `stash@{${index}}`,
   ]);
   if (commandNotOk(outcome)) failFromGit(outcome, `git stash show stash@{${index}}`);
-  return { result: outcome.result, files: parseUnifiedDiff(outcome.result.stdout) };
+  return { result: outcome.result, files: limitDiffPayload(parseUnifiedDiff(outcome.result.stdout)) };
 }
 
 /* ------------------------------------------------------------------ */

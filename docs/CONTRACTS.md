@@ -83,7 +83,7 @@ by the console panel.
 | `GET /repos/:id/log` | `limit, skip, all, branch, path, search` | `CommitLog` |
 | `GET /repos/:id/commits/:hash` | — | `CommitDetail` |
 | `GET /repos/:id/commits/:hash/diff` | `path?` | `{ files: FileDiff[] }` |
-| `GET /repos/:id/diff` | `scope=worktree\|staged\|commit\|range, path?, from?, to?, context?` | `{ files: FileDiff[] }` |
+| `GET /repos/:id/diff` | `scope=worktree\|staged\|commit\|range, path?, from?, to?, context? (0..1000, default 3)` | `{ files: FileDiff[] }` |
 | `POST /repos/:id/stage` | `{ paths, all? }` | `OperationResult` |
 | `POST /repos/:id/unstage` | `{ paths, all? }` | `OperationResult` |
 | `POST /repos/:id/discard` | `{ paths, untracked? }` | `OperationResult` |
@@ -149,6 +149,66 @@ Server implementation requirements (backend branch):
 - Tests: vitest + supertest against temporary repos created with the real `git`
   binary; cover status/log/stage/commit/diff/branches/tags/stash/worktrees/scan/config.
   `pnpm --filter @gitdeck/server test` must pass; keep tests cross-platform.
+
+### 4.1 Diff endpoints — unified payload contract
+
+The server always returns a **unified** diff. The side-by-side ("split") layout
+is derived **client-side** from this payload (`packages/shared/src/diff.ts`), so
+there is no `layout`/`mode` request parameter and the REST response shape must
+not change for split rendering.
+
+| Method & path | Query | Response |
+| --- | --- | --- |
+| `GET /repos/:id/diff` | `scope=worktree\|staged\|commit\|range`, `path?`, `from?`, `to?`, `context?` | `{ files: FileDiff[] }` |
+| `GET /repos/:id/commits/:hash/diff` | `path?` | `{ files: FileDiff[] }` |
+| `GET /repos/:id/stashes/:index/show` | — | `{ result: CommandResult, diff: FileDiff[] }` |
+
+- `scope=worktree` — unstaged changes (`git diff`). An untracked file is
+  synthesised as an all-`add` diff when `path` is given.
+- `scope=staged` — index vs `HEAD` (`git diff --cached`).
+- `scope=commit` — requires `from` (commit-ish; first-parent diff for merges).
+- `scope=range` — requires `from`; `to` defaults to `HEAD`.
+- `context` — unchanged lines around each hunk (`git -U<n>`), integer **0..1000**,
+  default **3**. It is validated with zod for **every** scope (out-of-range or
+  non-integer → `400 VALIDATION_ERROR`) and clamped defensively before reaching
+  `git`.
+- `path` — repository-relative file filter; passed to git after `--` so paths can
+  never be interpreted as options.
+
+Frozen payload shape:
+
+```ts
+interface FileDiff {
+  path: string;
+  oldPath?: string;
+  status: FileStatus; // added | modified | deleted | renamed | copied |
+  //                     untracked | conflicted | typechange | ignored
+  binary: boolean;
+  hunks: { header: string; lines: DiffLine[] }[]; // header: "@@ -a,b +c,d @@ ..."
+  imageBefore?: string; // data: URL, binary image diffs only
+  imageAfter?: string; // data: URL, binary image diffs only
+}
+
+interface DiffLine {
+  type: 'context' | 'add' | 'del';
+  content: string; // line text without the leading ' ', '+' or '-' marker
+  oldLine?: number; // 1-based line in the old file (context/del lines)
+  newLine?: number; // 1-based line in the new file (context/add lines)
+}
+```
+
+Numbering rules the web client relies on: within a hunk `oldLine`/`newLine`
+continue from the hunk header start numbers; `context` lines carry both,
+`add` lines only `newLine`, `del` lines only `oldLine`. Files are ordered as git
+emits them; hunks are ordered within the file. `binary: true` implies
+`hunks: []`.
+
+Payload guard: when a single file's diff exceeds ~1 MiB
+(`MAX_FILE_DIFF_BYTES`) or the combined payload exceeds ~8 MiB
+(`MAX_TOTAL_DIFF_BYTES`), that entry is returned **metadata-only** — `path`,
+`status`, `binary` and `oldPath` preserved, `hunks: []`, image data URLs omitted —
+so the file list still renders and the UI degrades gracefully. Files are never
+dropped and no extra fields are added.
 
 ## 5. Web contracts
 

@@ -276,6 +276,7 @@ export const diffQueryInputSchema = z.object({
   path: z.string().optional(),
   from: z.string().optional(),
   to: z.string().optional(),
-  context: z.coerce.number().int().min(0).max(100).optional(),
+  /** Number of context lines around each hunk (server clamps to 0..1000). */
+  context: z.coerce.number().int().min(0).max(1000).optional(),
 });
 export type DiffQueryInput = z.infer<typeof diffQueryInputSchema>;

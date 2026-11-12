@@ -3,8 +3,10 @@
  * every listing (branches, remotes, tags, stashes, worktrees, config, reflog).
  */
 import { Router } from 'express';
+import { z } from 'zod';
 import { diffQueryInputSchema, logQuerySchema } from '@gitdeck/shared';
 import type { ServerContext } from '../context';
+import { MAX_DIFF_CONTEXT } from '../git/diff';
 import {
   computeStatus,
   computeSummary,
@@ -24,6 +26,16 @@ import {
 import { handle, intParam, limitParam, param, parseQuery, repoFromRequest } from './util';
 
 const CONFIG_SCOPES = new Set(['all', 'local', 'global']);
+
+/**
+ * Diff query validation. The shared schema (single source of truth for the
+ * web client) caps `context` at 100; the server additionally accepts up to
+ * `MAX_DIFF_CONTEXT` (1000) so power users / tooling can request more surrounding
+ * lines. `readDiff` clamps defensively before it reaches `git -U<n>`.
+ */
+const diffQuerySchema = diffQueryInputSchema.extend({
+  context: z.coerce.number().int().min(0).max(MAX_DIFF_CONTEXT).optional(),
+});
 
 export function createRepoReadRouter(ctx: ServerContext): Router {
   const router = Router();
@@ -83,7 +95,7 @@ export function createRepoReadRouter(ctx: ServerContext): Router {
     '/repos/:id/diff',
     handle(async (req, res) => {
       const meta = await repoFromRequest(ctx, req);
-      const query = parseQuery(diffQueryInputSchema, req);
+      const query = parseQuery(diffQuerySchema, req);
       res.json({ files: await readDiff(ctx, meta, query) });
     }),
   );
