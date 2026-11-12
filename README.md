@@ -17,6 +17,10 @@ every action shows the exact `git` command it runs and the raw output it produce
 | --- | --- | --- |
 | ![Diff viewer](docs/screenshots/gitdeck-diff.png) | ![Worktree scan](docs/screenshots/gitdeck-worktree-scan.png) | ![Settings](docs/screenshots/gitdeck-settings-zh.png) |
 
+| Side-by-side diff | File tree |
+| --- | --- |
+| ![Side-by-side diff](docs/screenshots/gitdeck-diff-split.png) | ![File tree](docs/screenshots/gitdeck-diff-tree.png) |
+
 ## ✨ Features
 
 ### History & inspection
