@@ -1,8 +1,9 @@
-import { Copy, ExternalLink, GitCommitHorizontal, Mail, X } from 'lucide-react';
+import { Copy, ExternalLink, FileDiff, GitCommitHorizontal, Mail, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import type { FileChange } from '@gitdeck/shared';
+import type { FileChange, FileTreeEntry } from '@gitdeck/shared';
 import { useCommitDetail, useRepoSummary } from '@/api/hooks';
 import { useToast } from '@/components/feedback/toast';
+import { FileTree } from '@/components/file-tree';
 import { Avatar } from '@/components/ui/avatar';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -21,6 +22,27 @@ const DEFAULT_DETAILS_WIDTH = 380;
 const MIN_DETAILS_WIDTH = 300;
 const MAX_DETAILS_WIDTH = 720;
 
+/** File row inside the collapsible tree: status letter + file name (the folders above it carry the path). */
+function CommitFileLeaf({ entry }: { entry: FileTreeEntry }): JSX.Element {
+  const meta = fileStatusMeta(entry.status ?? 'modified');
+  const path = entry.path.replace(/\\/g, '/');
+  const name = path.slice(path.lastIndexOf('/') + 1);
+
+  return (
+    <>
+      <span className={cn('w-3 shrink-0 text-center font-mono text-2xs font-semibold', meta.className)}>
+        {meta.letter}
+      </span>
+      <span className="min-w-0 flex-1 truncate text-xs text-fg-secondary group-hover/tree-row:text-fg">{name}</span>
+      {entry.oldPath ? (
+        <span className="hidden shrink-0 truncate text-2xs text-fg-muted md:inline" title={entry.oldPath}>
+          ← {entry.oldPath}
+        </span>
+      ) : null}
+    </>
+  );
+}
+
 function FilesSection({ files, commitHash }: { files: FileChange[]; commitHash: string }): JSX.Element {
   const { t } = useI18n();
   const openDiff = useAppStore((state) => state.openDiff);
@@ -32,47 +54,29 @@ function FilesSection({ files, commitHash }: { files: FileChange[]; commitHash: 
   }
 
   return (
-    <div className="space-y-px px-1.5">
-      {files.map((file) => {
-        const meta = fileStatusMeta(file.status);
-        return (
-          <button
-            key={`${file.oldPath ?? ''}-${file.path}`}
-            type="button"
-            onClick={() => openDiff({ scope: 'commit', from: commitHash, path: file.path, title: file.path })}
-            title={file.oldPath ? `${file.oldPath} → ${file.path}` : file.path}
-            className="group flex h-6 w-full min-w-0 items-center gap-1.5 rounded px-1.5 text-left transition-colors hover:bg-hover"
-          >
-            <span className={cn('w-3 shrink-0 font-mono text-2xs font-semibold', meta.className)}>
-              {meta.letter}
-            </span>
-            <span className="min-w-0 flex-1 truncate text-xs text-fg-secondary group-hover:text-fg">
-              {file.oldPath ? (
-                <>
-                  <span className="text-fg-muted">{file.oldPath}</span>
-                  <span className="px-1 text-fg-muted">→</span>
-                  {file.path}
-                </>
-              ) : (
-                file.path
-              )}
-            </span>
-            {file.binary ? (
-              <span className="shrink-0 text-2xs text-fg-muted">{t('commit.binaryShort', 'bin')}</span>
-            ) : (
-              <>
-                {file.insertions ? (
-                  <span className="shrink-0 font-mono text-2xs text-success">+{file.insertions}</span>
-                ) : null}
-                {file.deletions ? (
-                  <span className="shrink-0 font-mono text-2xs text-danger">−{file.deletions}</span>
-                ) : null}
-              </>
-            )}
-          </button>
-        );
-      })}
-    </div>
+    <FileTree
+      entries={files}
+      defaultExpanded
+      onSelect={(entry) =>
+        openDiff({ scope: 'commit', from: commitHash, path: entry.path, title: entry.path })
+      }
+      renderLeaf={(entry) => <CommitFileLeaf entry={entry} />}
+      leafActions={(entry) =>
+        entry.binary ? (
+          <span className="pr-1.5 text-2xs text-fg-muted">{t('commit.binaryShort', 'bin')}</span>
+        ) : (
+          <span className="flex shrink-0 items-center gap-1 pr-1.5">
+            {entry.insertions ? (
+              <span className="font-mono text-2xs text-success">+{entry.insertions}</span>
+            ) : null}
+            {entry.deletions ? (
+              <span className="font-mono text-2xs text-danger">−{entry.deletions}</span>
+            ) : null}
+          </span>
+        )
+      }
+      className="px-1.5"
+    />
   );
 }
 
@@ -89,6 +93,7 @@ export function CommitDetails(): JSX.Element {
   const selectCommit = useAppStore((state) => state.selectCommit);
   const detailsWidth = useAppStore((state) => state.detailsWidth);
   const setDetailsWidth = useAppStore((state) => state.setDetailsWidth);
+  const openDiff = useAppStore((state) => state.openDiff);
   const detail = useCommitDetail(activeRepoId, selectedCommitHash);
   const summary = useRepoSummary(activeRepoId);
 
@@ -312,16 +317,34 @@ export function CommitDetails(): JSX.Element {
             </div>
 
             <div className="px-3 pt-3">
-              <div className="mb-1 flex items-center justify-between text-2xs text-fg-muted">
+              <div className="mb-1 flex items-center justify-between gap-2 text-2xs text-fg-muted">
                 <span className="font-semibold uppercase tracking-wide">
                   {t('commit.changedFiles', 'Changed files')}
                 </span>
-                <span>
-                  {t('commit.stats', '{files} files · +{additions} −{deletions}', {
-                    files: stats?.filesChanged ?? 0,
-                    additions: insertions,
-                    deletions,
-                  })}
+                <span className="flex shrink-0 items-center gap-1.5">
+                  <span>
+                    {t('commit.stats', '{files} files · +{additions} −{deletions}', {
+                      files: stats?.filesChanged ?? 0,
+                      additions: insertions,
+                      deletions,
+                    })}
+                  </span>
+                  <Tooltip label={t('commit.viewAllChanges', 'View all changes')}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        openDiff({
+                          scope: 'commit',
+                          from: commit.hash,
+                          title: commit.subject || commit.shortHash,
+                        })
+                      }
+                      className="flex h-5 w-5 items-center justify-center rounded text-fg-muted transition-colors hover:bg-hover hover:text-fg"
+                      aria-label={t('commit.viewAllChanges', 'View all changes')}
+                    >
+                      <FileDiff className="h-3 w-3" />
+                    </button>
+                  </Tooltip>
                 </span>
               </div>
               <div className="flex h-1 overflow-hidden rounded-full bg-hover">

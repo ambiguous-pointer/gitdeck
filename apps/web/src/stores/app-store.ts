@@ -4,6 +4,7 @@
  */
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import type { DiffViewMode } from '@gitdeck/shared';
 
 export type BottomTab = 'changes' | 'console';
 
@@ -84,6 +85,10 @@ interface AppState {
   detailsWidth: number;
   setDetailsWidth: (width: number) => void;
 
+  /** Diff layout: side-by-side (`split`) or single column (`unified`). */
+  diffViewMode: DiffViewMode;
+  setDiffViewMode: (mode: DiffViewMode) => void;
+
   selectedCommitHash: string | null;
   selectCommit: (hash: string | null) => void;
 
@@ -136,6 +141,9 @@ export const useAppStore = create<AppState>()(
       detailsWidth: 380,
       setDetailsWidth: (detailsWidth) => set({ detailsWidth: Math.min(720, Math.max(300, detailsWidth)) }),
 
+      diffViewMode: 'split',
+      setDiffViewMode: (diffViewMode) => set({ diffViewMode: diffViewMode === 'unified' ? 'unified' : 'split' }),
+
       selectedCommitHash: null,
       selectCommit: (selectedCommitHash) => set({ selectedCommitHash }),
 
@@ -171,6 +179,7 @@ export const useAppStore = create<AppState>()(
         bottomPanelOpen: state.bottomPanelOpen,
         bottomTab: state.bottomTab,
         detailsWidth: state.detailsWidth,
+        diffViewMode: state.diffViewMode,
         filters: state.filters,
       }),
     },

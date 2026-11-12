@@ -149,6 +149,7 @@ export const en: Record<string, string> = {
   'commit.refs': 'Refs',
   'commit.selectHint': 'Select a commit to inspect its details.',
   'commit.stats': '{files} files · +{additions} −{deletions}',
+  'commit.viewAllChanges': 'View all changes',
   'commit.parent': 'Parent',
   'commit.rootCommit': 'Root commit',
 
@@ -236,6 +237,10 @@ export const en: Record<string, string> = {
   'diff.title': 'Diff',
   'diff.unified': 'Unified',
   'diff.split': 'Split',
+  'diff.viewMode': 'Diff layout',
+  'diff.modeSplit': 'Side by side',
+  'diff.modeUnified': 'Unified',
+  'diff.tree': 'File tree',
   'diff.binary': 'Binary file — diff not shown.',
   'diff.noChanges': 'No changes to show.',
   'diff.loading': 'Loading diff…',
@@ -249,6 +254,15 @@ export const en: Record<string, string> = {
   'diff.lines': '{count} lines',
   'diff.context': 'Context',
   'diff.hunks': '{count} hunks',
+
+  // File tree
+  'tree.selectFile': 'Select {path}',
+  'tree.expandFolder': 'Expand folder',
+  'tree.collapseFolder': 'Collapse folder',
+  'tree.expandAll': 'Expand all folders',
+  'tree.collapseAll': 'Collapse all folders',
+  'tree.folder': 'Folder',
+  'tree.filesIn': '{count} files',
 
   // Actions / toolbar
   'actions.fetch': 'Fetch',

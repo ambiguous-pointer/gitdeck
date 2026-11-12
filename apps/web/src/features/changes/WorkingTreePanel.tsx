@@ -20,11 +20,11 @@ import {
   Archive,
   GitMerge,
 } from 'lucide-react';
-import type { FileChange } from '@gitdeck/shared';
+import type { FileChange, FileTreeEntry } from '@gitdeck/shared';
 import { errorMessage } from '@/api/client';
 import { useDiscard, useRepoStatus, useResolveConflicts, useStage, useUnstage } from '@/api/hooks';
 import { useToast } from '@/components/feedback/toast';
-import { Badge } from '@/components/ui/badge';
+import { FileTree } from '@/components/file-tree';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SkeletonRows } from '@/components/ui/skeleton';
@@ -210,9 +210,7 @@ export function WorkingTreePanel(): JSX.Element {
         <div className="flex h-7 shrink-0 items-center gap-1 border-b border-border-subtle px-2">
           <span className="truncate text-2xs text-fg-muted">
             {t('changes.changesCount', '{count} changes', { count: total })}
-            {data?.branch ? (
-              <span className="ml-1.5 font-mono text-fg-secondary">{data.branch}</span>
-            ) : null}
+            {data?.branch ? <span className="ml-1.5 font-mono text-fg-secondary">{data.branch}</span> : null}
           </span>
           <div className="ml-auto flex items-center gap-0.5">
             <Button
@@ -240,10 +238,7 @@ export function WorkingTreePanel(): JSX.Element {
               size="icon-sm"
               className="text-danger hover:bg-danger/10"
               onClick={confirmDiscardAll}
-              disabled={
-                bulkPending ||
-                (data?.unstaged.length ?? 0) + (data?.untracked.length ?? 0) === 0
-              }
+              disabled={bulkPending || (data?.unstaged.length ?? 0) + (data?.untracked.length ?? 0) === 0}
               title={t('changes.discardAll', 'Discard all')}
               aria-label={t('changes.discardAll', 'Discard all')}
             >
@@ -303,20 +298,20 @@ export function WorkingTreePanel(): JSX.Element {
                     onToggle={() =>
                       setCollapsed((current) => ({ ...current, [group.key]: !current[group.key] }))
                     }
-                    onOpenDiff={(file) =>
+                    onOpenDiff={(path) =>
                       openDiff({
                         scope: group.diffScope,
-                        path: file.path,
-                        title: file.path,
+                        path,
+                        title: path,
                       })
                     }
                     onStage={stageFile}
                     onUnstage={unstageFile}
-                    onDiscard={(file) =>
+                    onDiscard={(path) =>
                       confirmDiscard(
-                        [file.path],
+                        [path],
                         group.untracked ?? false,
-                        t('changes.discardFileTitle', 'Discard changes to {path}?', { path: file.path }),
+                        t('changes.discardFileTitle', 'Discard changes to {path}?', { path }),
                       )
                     }
                     onResolve={resolveConflict}
@@ -342,10 +337,10 @@ interface FileGroupViewProps {
   group: FileGroup;
   collapsed: boolean;
   onToggle: () => void;
-  onOpenDiff: (file: FileChange) => void;
+  onOpenDiff: (path: string) => void;
   onStage: (path: string) => void;
   onUnstage: (path: string) => void;
-  onDiscard: (file: FileChange) => void;
+  onDiscard: (path: string) => void;
   onResolve: (path: string, side: 'ours' | 'theirs' | 'mark-resolved') => void;
   pending: boolean;
 }
@@ -379,7 +374,9 @@ function FileGroupView({
         >
           {collapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
           <span className={conflict ? 'text-danger' : undefined}>{group.title}</span>
-          <span className="rounded bg-elevated px-1 font-normal tracking-normal text-fg-muted">{group.files.length}</span>
+          <span className="rounded bg-elevated px-1 font-normal tracking-normal text-fg-muted">
+            {group.files.length}
+          </span>
         </button>
         {conflict ? (
           <span className="ml-auto text-2xs text-danger/90">
@@ -389,30 +386,49 @@ function FileGroupView({
       </div>
 
       {collapsed ? null : (
-        <div>
-          {group.files.map((file) => (
-            <FileRow
-              key={`${group.key}-${file.path}`}
-              file={file}
+        <FileTree
+          entries={group.files}
+          defaultExpanded
+          onSelect={(entry) => onOpenDiff(entry.path)}
+          renderLeaf={(entry) => <FileLeaf entry={entry} />}
+          leafActions={(entry) => (
+            <FileActions
               group={group.key}
-              onOpenDiff={() => onOpenDiff(file)}
-              onStage={() => onStage(file.path)}
-              onUnstage={() => onUnstage(file.path)}
-              onDiscard={() => onDiscard(file)}
-              onResolve={(side) => onResolve(file.path, side)}
+              onStage={() => onStage(entry.path)}
+              onUnstage={() => onUnstage(entry.path)}
+              onDiscard={() => onDiscard(entry.path)}
+              onResolve={(side) => onResolve(entry.path, side)}
               pending={pending}
             />
-          ))}
-        </div>
+          )}
+          className="pb-1"
+        />
       )}
     </div>
   );
 }
 
-interface FileRowProps {
-  file: FileChange;
+/** File row inside the collapsible tree: status letter + file name (the folders above it carry the path). */
+function FileLeaf({ entry }: { entry: FileTreeEntry }): JSX.Element {
+  const meta = fileStatusMeta(entry.status ?? 'modified');
+  const path = entry.path.replace(/\\/g, '/');
+  const name = path.slice(path.lastIndexOf('/') + 1);
+
+  return (
+    <>
+      <span className={cn('w-3 shrink-0 text-center font-mono text-2xs font-semibold', meta.className)}>
+        {meta.letter}
+      </span>
+      <span className="min-w-0 flex-1 truncate text-xs text-fg-secondary group-hover/tree-row:text-fg">{name}</span>
+      {entry.oldPath && entry.oldPath !== entry.path ? (
+        <span className="hidden shrink-0 truncate text-2xs text-fg-muted sm:inline">← {entry.oldPath}</span>
+      ) : null}
+    </>
+  );
+}
+
+interface FileActionsProps {
   group: GroupKey;
-  onOpenDiff: () => void;
   onStage: () => void;
   onUnstage: () => void;
   onDiscard: () => void;
@@ -420,104 +436,90 @@ interface FileRowProps {
   pending: boolean;
 }
 
-function FileRow({
-  file,
+/** Per-row controls rendered at the end of a tree leaf. */
+function FileActions({
   group,
-  onOpenDiff,
   onStage,
   onUnstage,
   onDiscard,
   onResolve,
   pending,
-}: FileRowProps): JSX.Element {
+}: FileActionsProps): JSX.Element {
   const { t } = useI18n();
-  const meta = fileStatusMeta(file.status);
-  const conflict = group === 'conflicts';
-  const staged = group === 'staged';
-  const path = file.path.replace(/\\/g, '/');
-  const slash = path.lastIndexOf('/');
-  const dir = slash >= 0 ? path.slice(0, slash + 1) : '';
-  const name = slash >= 0 ? path.slice(slash + 1) : path;
+
+  if (group === 'conflicts') {
+    return (
+      <span className="flex shrink-0 items-center gap-0.5">
+        <Button
+          variant="ghost"
+          size="xs"
+          disabled={pending}
+          onClick={() => onResolve('ours')}
+          title={t('changes.resolveOurs', 'Keep ours')}
+        >
+          {t('changes.oursShort', 'Ours')}
+        </Button>
+        <Button
+          variant="ghost"
+          size="xs"
+          disabled={pending}
+          onClick={() => onResolve('theirs')}
+          title={t('changes.resolveTheirs', 'Keep theirs')}
+        >
+          {t('changes.theirsShort', 'Theirs')}
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          disabled={pending}
+          onClick={() => onResolve('mark-resolved')}
+          title={t('changes.markResolved', 'Mark as resolved')}
+          aria-label={t('changes.markResolved', 'Mark as resolved')}
+        >
+          <CircleCheck className="h-3.5 w-3.5 text-success" />
+        </Button>
+      </span>
+    );
+  }
 
   return (
-    <div className="group/row flex h-7 items-center gap-1 rounded px-1.5 transition-colors hover:bg-hover">
-      <button
-        type="button"
-        onClick={onOpenDiff}
-        className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
-        title={t('changes.openDiff', 'Open diff')}
-      >
-        <span className={cn('w-3 shrink-0 text-center font-mono text-2xs font-semibold', meta.className)}>
-          {meta.letter}
-        </span>
-        <span className="min-w-0 truncate text-xs text-fg-secondary">
-          {dir ? <span className="text-fg-muted">{dir}</span> : null}
-          {name}
-        </span>
-        {file.oldPath && file.oldPath !== file.path ? (
-          <span className="hidden shrink-0 truncate text-2xs text-fg-muted sm:inline">← {file.oldPath}</span>
-        ) : null}
-      </button>
-
-      {conflict ? (
-        <span className="flex shrink-0 items-center gap-0.5">
-          <Button variant="ghost" size="xs" disabled={pending} onClick={() => onResolve('ours')} title={t('changes.resolveOurs', 'Keep ours')}>
-            {t('changes.oursShort', 'Ours')}
-          </Button>
-          <Button variant="ghost" size="xs" disabled={pending} onClick={() => onResolve('theirs')} title={t('changes.resolveTheirs', 'Keep theirs')}>
-            {t('changes.theirsShort', 'Theirs')}
-          </Button>
+    <span className="hidden shrink-0 items-center gap-0.5 group-hover/tree-row:flex group-focus-within/tree-row:flex">
+      {group === 'staged' ? (
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          disabled={pending}
+          onClick={onUnstage}
+          title={t('changes.unstageFile', 'Unstage file')}
+          aria-label={t('changes.unstageFile', 'Unstage file')}
+        >
+          <Minus className="h-3.5 w-3.5" />
+        </Button>
+      ) : (
+        <>
           <Button
             variant="ghost"
             size="icon-sm"
             disabled={pending}
-            onClick={() => onResolve('mark-resolved')}
-            title={t('changes.markResolved', 'Mark as resolved')}
-            aria-label={t('changes.markResolved', 'Mark as resolved')}
+            onClick={onStage}
+            title={t('changes.stageFile', 'Stage file')}
+            aria-label={t('changes.stageFile', 'Stage file')}
           >
-            <CircleCheck className="h-3.5 w-3.5 text-success" />
+            <Plus className="h-3.5 w-3.5" />
           </Button>
-        </span>
-      ) : (
-        <span className="hidden shrink-0 items-center gap-0.5 group-hover/row:flex group-focus-within/row:flex">
-          {staged ? (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              disabled={pending}
-              onClick={onUnstage}
-              title={t('changes.unstageFile', 'Unstage file')}
-              aria-label={t('changes.unstageFile', 'Unstage file')}
-            >
-              <Minus className="h-3.5 w-3.5" />
-            </Button>
-          ) : (
-            <>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                disabled={pending}
-                onClick={onStage}
-                title={t('changes.stageFile', 'Stage file')}
-                aria-label={t('changes.stageFile', 'Stage file')}
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="text-danger hover:bg-danger/10"
-                disabled={pending}
-                onClick={onDiscard}
-                title={t('changes.discardFile', 'Discard file changes')}
-                aria-label={t('changes.discardFile', 'Discard file changes')}
-              >
-                <Undo2 className="h-3.5 w-3.5" />
-              </Button>
-            </>
-          )}
-        </span>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="text-danger hover:bg-danger/10"
+            disabled={pending}
+            onClick={onDiscard}
+            title={t('changes.discardFile', 'Discard file changes')}
+            aria-label={t('changes.discardFile', 'Discard file changes')}
+          >
+            <Undo2 className="h-3.5 w-3.5" />
+          </Button>
+        </>
       )}
-    </div>
+    </span>
   );
 }

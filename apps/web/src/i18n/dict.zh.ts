@@ -148,6 +148,7 @@ export const zh: Record<string, string> = {
   'commit.refs': '引用',
   'commit.selectHint': '选择一个提交以查看详情。',
   'commit.stats': '{files} 个文件 · +{additions} −{deletions}',
+  'commit.viewAllChanges': '查看全部变更',
   'commit.parent': '父提交',
   'commit.rootCommit': '根提交',
 
@@ -235,6 +236,10 @@ export const zh: Record<string, string> = {
   'diff.title': '差异对比',
   'diff.unified': '统一视图',
   'diff.split': '并排视图',
+  'diff.viewMode': '差异布局',
+  'diff.modeSplit': '并排视图',
+  'diff.modeUnified': '统一视图',
+  'diff.tree': '文件树',
   'diff.binary': '二进制文件，无法显示差异。',
   'diff.noChanges': '没有可显示的改动。',
   'diff.loading': '正在加载 Diff…',
@@ -248,6 +253,15 @@ export const zh: Record<string, string> = {
   'diff.lines': '{count} 行',
   'diff.context': '上下文',
   'diff.hunks': '{count} 个差异块',
+
+  // 文件树
+  'tree.selectFile': '选择 {path}',
+  'tree.expandFolder': '展开文件夹',
+  'tree.collapseFolder': '折叠文件夹',
+  'tree.expandAll': '展开全部文件夹',
+  'tree.collapseAll': '折叠全部文件夹',
+  'tree.folder': '文件夹',
+  'tree.filesIn': '{count} 个文件',
 
   // 操作
   'actions.fetch': '抓取',
